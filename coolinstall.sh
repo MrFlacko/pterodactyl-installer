@@ -1,6 +1,6 @@
 #!/bin/bash
-
 set -e
+Script_Version=0.02
 
 #############################################################################
 #                                                                           #
@@ -285,6 +285,7 @@ OpeningMessage() {
   echo "you see on the screen. You can press [Enter] to start the installation."
   echo -e "Best of luck\n"
   echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_RED} $VERSION"
+  echo -e "${DARK_GRAY}Script Version:${LIGHT_BLUE} $Script_Version"
   echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_BLUE} $os_version"
   [[ "$SUPPORTED" == true ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${LIGHT_GREEN}Supported" 
   [[ "$SUPPORTED" == false ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${RED}Unsupported"
