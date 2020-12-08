@@ -272,9 +272,9 @@ function check_os_comp {
 # This is the OpeningMessage, it is displayed after the FQDN has been received and shows the user all the information that will need throughout the install
 OpeningMessage() {
   clear
-  echo -e "\n${BLUE}Pterodactyl Panel Installation Script"
+  echo -e "\n${BLUE}Pterodactyl Panel Installation Script\n"
   echo -e "${DARK_GRAY}Copyright (C) 2018 - 2020, Vilhelm Prytz, <vilhelm@prytznet.se>, et al."
-  echo -e "${DARK_GRAY}https://github.com/vilhelmprytz/pterodactyl-installer"
+  echo -e "${DARK_GRAY}https://github.com/vilhelmprytz/pterodactyl-installer\n"
   echo -e "${LIGHT_GREEN}Hello,"
   echo "This script isn't associated with the Official Pterodactyl Project"
   echo "though is designed to quickly run through the Pterodactyl" 
@@ -284,14 +284,16 @@ OpeningMessage() {
   echo "throughout the setup, though it is up to you. If you're happy with the information"
   echo "you see on the screen. You can press [Enter] to start the installation."
   echo -e "Best of luck\n"
-  echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_BLUE} $pterodactyl_version"
-#  echo -e "${DARK_GRAY}Script Version:${LIGHT_BLUE} $Script_Version"
+  echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_RED} $VERSION"
   echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_BLUE} $os_version"
-#  echo -e "${DARK_GRAY}Domain:${LIGHT_BLUE} $FQDN"
-  echo -e "${DARK_GRAY}Public IP:${LIGHT_BLUE} $PublicIP"
-#  echo -e "${DARK_GRAY}Domain IP:${LIGHT_BLUE} $DomainIP"
-  echo -e "${DARK_GRAY}Available RAM:${LIGHT_BLUE} $MemAvailable${DARK_GRAY}/${LIGHT_BLUE}$MemTotal${DARK_GRAY}MB"
-  echo -e "${DARK_GRAY}Cores/Threads Available:${LIGHT_BLUE} $Cores"
+  
+  [[ "$SUPPORTED" == true ]] && \
+  echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${LIGHT_GREEN}Supported" || \
+  echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${RED}Unsupported"
+
+  echo -e "${DARK_GRAY}Public IP:${LIGHT_RED} $PublicIP"
+  echo -e "${DARK_GRAY}Available RAM:${LIGHT_RED} $MemAvailable${DARK_GRAY}/${LIGHT_RED}$MemTotal${DARK_GRAY} MB"
+  echo -e "${DARK_GRAY}Cores/Threads Available:${LIGHT_RED} $Cores"
   echo ''
   echo -e "${DARK_GRAY}Partitions:"
   lsblk
