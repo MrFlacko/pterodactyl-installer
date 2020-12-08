@@ -908,7 +908,7 @@ function main {
   check_os_comp
 
   # This is the OpeningMessage, it is displayed after the FQDN has been received and shows the user all the information that will need throughout the install
-OpeningMessage() {
+function OpeningMessage {
   clear
   echo -e "\n${BLUE}Pterodactyl Panel Installation Script\n"
   echo -e "${DARK_GRAY}Copyright (C) 2018 - 2020, Vilhelm Prytz, <vilhelm@prytznet.se>, et al."
