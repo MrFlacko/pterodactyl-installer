@@ -41,6 +41,40 @@ if ! [ -x "$(command -v curl)" ]; then
   exit 1
 fi
 
+# Some colours that are used throughout the script
+LIGHT_RED='\033[1;31m'
+RED='\033[0;31m'
+LIGHT_BLUE='\033[0;96m'
+BLUE='\033[1;34m'
+DARK_GRAY='\033[0;37m'
+LIGHT_GREEN='\033[1;32m'
+NoColor='\033[0m'
+
+# Global Variables
+os_version="$(lsb_release -a 2> /dev/null | grep Desc | sed -e 's/.*://' -e 's/^[ \t]*//')"
+pterodactyl_version="$(curl --silent "https://api.github.com/repos/pterodactyl/panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')"
+MemTotal="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemTotal | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
+MemAvailable="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemAvailable | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
+Cores="$(lscpu | grep -E '^CPU\(s\):' | sed -e 's/.*[^0-9]\([0-9]\+\)[^0-9]*$/\1/')"
+PublicIP="$(wget http://ipecho.net/plain -O - -q ; echo)"
+
+# This is a visual loading bar funcation obtained from https://unix.stackexchange.com/questions/415421/linux-how-to-create-simple-progress-bar-in-bash
+function loading_bar {
+  prog() {
+      local w=80 p=$1;  shift
+      # create a string of spaces, then change them to dots
+      printf -v dots "%*s" "$(( $p*$w/100 ))" ""; dots=${dots// /.};
+      # print those dots on a fixed-width space plus the percentage etc. 
+      printf "\r\e[K|%-*s| %3d %% %s" "$w" "$dots" "$p" "$*"; 
+  }
+  # test loop
+  for x in {1..100} ; do
+      prog "$x" 
+      sleep .05   # do some work here
+  done ; echo
+}
+
+
 # define version using information from GitHub
 get_latest_release() {
   curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
@@ -1047,5 +1081,6 @@ function goodbye {
 }
 
 # run script
+OpeningMessage
 main
 goodbye
