@@ -74,18 +74,6 @@ function loading_bar {
   done ; echo
 }
 
-
-# define version using information from GitHub
-get_latest_release() {
-  curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
-  grep '"tag_name":' |                                              # Get tag line
-  sed -E 's/.*"([^"]+)".*/\1/'                                      # Pluck JSON value
-}
-
-echo "* Retrieving release information.."
-PTERODACTYL_VERSION="$(get_latest_release "pterodactyl/panel")"
-echo "* Latest version is $PTERODACTYL_VERSION"
-
 # variables
 WEBSERVER="nginx"
 FQDN=""
@@ -283,6 +271,7 @@ function check_os_comp {
 
 # This is the OpeningMessage, it is displayed after the FQDN has been received and shows the user all the information that will need throughout the install
 OpeningMessage() {
+  clear
   echo -e "\n${BLUE}Pterodactyl Installation Script"
   echo -e "${DARK_GRAY}Created by MrFlacko - Inspired by Vilhelmprytz\n"
   echo -e "${LIGHT_GREEN}Hello,"
@@ -294,11 +283,11 @@ OpeningMessage() {
   echo "you see on the screen. You can press [Enter] to start the installation."
   echo -e "Best of luck - Flacko \n"
   echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_BLUE} $pterodactyl_version"
-  echo -e "${DARK_GRAY}Script Version:${LIGHT_BLUE} $Script_Version"
+#  echo -e "${DARK_GRAY}Script Version:${LIGHT_BLUE} $Script_Version"
   echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_BLUE} $os_version"
-  echo -e "${DARK_GRAY}Domain:${LIGHT_BLUE} $FQDN"
+#  echo -e "${DARK_GRAY}Domain:${LIGHT_BLUE} $FQDN"
   echo -e "${DARK_GRAY}Public IP:${LIGHT_BLUE} $PublicIP"
-  echo -e "${DARK_GRAY}Domain IP:${LIGHT_BLUE} $DomainIP"
+#  echo -e "${DARK_GRAY}Domain IP:${LIGHT_BLUE} $DomainIP"
   echo -e "${DARK_GRAY}Available RAM:${LIGHT_BLUE} $MemAvailable${DARK_GRAY}/${LIGHT_BLUE}$MemTotal${DARK_GRAY}MB"
   echo -e "${DARK_GRAY}Cores/Threads Available:${LIGHT_BLUE} $Cores"
   echo ''
