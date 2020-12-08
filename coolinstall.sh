@@ -286,11 +286,8 @@ OpeningMessage() {
   echo -e "Best of luck\n"
   echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_RED} $VERSION"
   echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_BLUE} $os_version"
-  
-  [[ "$SUPPORTED" == true ]] && \
-  echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${LIGHT_GREEN}Supported" || \
-  echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${RED}Unsupported"
-
+  [[ "$SUPPORTED" == true ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${LIGHT_GREEN}Supported" 
+  [[ "$SUPPORTED" == false ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${RED}Unsupported"
   echo -e "${DARK_GRAY}Public IP:${LIGHT_RED} $PublicIP"
   echo -e "${DARK_GRAY}Available RAM:${LIGHT_RED} $MemAvailable${DARK_GRAY}/${LIGHT_RED}$MemTotal${DARK_GRAY} MB"
   echo -e "${DARK_GRAY}Cores/Threads Available:${LIGHT_RED} $Cores"
