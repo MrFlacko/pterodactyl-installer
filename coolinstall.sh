@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-Script_Version=0.02
+Script_Version=0.03
 
 #############################################################################
 #                                                                           #
@@ -267,37 +267,6 @@ function check_os_comp {
     print_error "Unsupported OS"
     exit 1
   fi
-}
-
-# This is the OpeningMessage, it is displayed after the FQDN has been received and shows the user all the information that will need throughout the install
-OpeningMessage() {
-  clear
-  echo -e "\n${BLUE}Pterodactyl Panel Installation Script\n"
-  echo -e "${DARK_GRAY}Copyright (C) 2018 - 2020, Vilhelm Prytz, <vilhelm@prytznet.se>, et al."
-  echo -e "${DARK_GRAY}https://github.com/vilhelmprytz/pterodactyl-installer\n"
-  echo -e "${LIGHT_GREEN}Hello,"
-  echo "This script isn't associated with the Official Pterodactyl Project"
-  echo "though is designed to quickly run through the Pterodactyl" 
-  echo "install with as much ease to the user as possible."
-  echo "This script will set the panel with ssl on the machine."
-  echo "This screen you see is the system's information, I would copy this down to use"
-  echo "throughout the setup, though it is up to you. If you're happy with the information"
-  echo "you see on the screen. You can press [Enter] to start the installation."
-  echo -e "Best of luck\n"
-  echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_RED} $VERSION"
-  echo -e "${DARK_GRAY}Script Version:${LIGHT_BLUE} $Script_Version"
-  echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_BLUE} $os_version"
-  [[ "$SUPPORTED" == true ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${LIGHT_GREEN}Supported" 
-  [[ "$SUPPORTED" == false ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${RED}Unsupported"
-  echo $SUPPORTED
-  echo -e "${DARK_GRAY}Public IP:${LIGHT_RED} $PublicIP"
-  echo -e "${DARK_GRAY}Available RAM:${LIGHT_RED} $MemAvailable${DARK_GRAY}/${LIGHT_RED}$MemTotal${DARK_GRAY} MB"
-  echo -e "${DARK_GRAY}Cores/Threads Available:${LIGHT_RED} $Cores"
-  echo ''
-  echo -e "${DARK_GRAY}Partitions:"
-  lsblk
-  echo -e "${NoColor}"
-  read
 }
 
 #################################
@@ -936,6 +905,37 @@ function main {
 
   # checks if the system is compatible with this installation script
   check_os_comp
+
+# This is the OpeningMessage, it is displayed after the FQDN has been received and shows the user all the information that will need throughout the install
+OpeningMessage() {
+  clear
+  echo -e "\n${BLUE}Pterodactyl Panel Installation Script\n"
+  echo -e "${DARK_GRAY}Copyright (C) 2018 - 2020, Vilhelm Prytz, <vilhelm@prytznet.se>, et al."
+  echo -e "${DARK_GRAY}https://github.com/vilhelmprytz/pterodactyl-installer\n"
+  echo -e "${LIGHT_GREEN}Hello,"
+  echo "This script isn't associated with the Official Pterodactyl Project"
+  echo "though is designed to quickly run through the Pterodactyl" 
+  echo "install with as much ease to the user as possible."
+  echo "This script will set the panel with ssl on the machine."
+  echo "This screen you see is the system's information, I would copy this down to use"
+  echo "throughout the setup, though it is up to you. If you're happy with the information"
+  echo "you see on the screen. You can press [Enter] to start the installation."
+  echo -e "Best of luck\n"
+  echo -e "${DARK_GRAY}Pterodactyl Version:${LIGHT_RED} $VERSION"
+  echo -e "${DARK_GRAY}Script Version:${LIGHT_BLUE} $Script_Version"
+#   echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_BLUE} $os_version"
+  [[ "$SUPPORTED" == true ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${LIGHT_GREEN}Supported" 
+  [[ "$SUPPORTED" == false ]] && echo -e "${DARK_GRAY}Ubuntu Version:${LIGHT_RED} $os_version ${RED}Unsupported"
+  echo $SUPPORTED
+  echo -e "${DARK_GRAY}Public IP:${LIGHT_RED} $PublicIP"
+  echo -e "${DARK_GRAY}Available RAM:${LIGHT_RED} $MemAvailable${DARK_GRAY}/${LIGHT_RED}$MemTotal${DARK_GRAY} MB"
+  echo -e "${DARK_GRAY}Cores/Threads Available:${LIGHT_RED} $Cores"
+  echo ''
+  echo -e "${DARK_GRAY}Partitions:"
+  lsblk
+  echo -e "${NoColor}"
+  read
+}
 
   # set database credentials
   print_brake 72
