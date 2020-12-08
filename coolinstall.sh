@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-Script_Version=0.04
+Script_Version=0.05
 
 #############################################################################
 #                                                                           #
@@ -57,6 +57,7 @@ MemTotal="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | gre
 MemAvailable="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemAvailable | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
 Cores="$(lscpu | grep -E '^CPU\(s\):' | sed -e 's/.*[^0-9]\([0-9]\+\)[^0-9]*$/\1/')"
 PublicIP="$(wget http://ipecho.net/plain -O - -q ; echo)"
+SUPPORTED=false
 
 # This is a visual loading bar funcation obtained from https://unix.stackexchange.com/questions/415421/linux-how-to-create-simple-progress-bar-in-bash
 function loading_bar {
