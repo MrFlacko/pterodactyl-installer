@@ -28,68 +28,39 @@ set -e
 #                                                                           #
 #############################################################################
 
-# exit with error status code if user is not root
-if [[ $EUID -ne 0 ]]; then
-  echo "* This script must be executed with root privileges (sudo)." 1>&2
-  exit 1
-fi
 
-# check for curl
-if ! [ -x "$(command -v curl)" ]; then
-  echo "* curl is required in order for this script to work."
-  echo "* install using apt (Debian and derivatives) or yum/dnf (CentOS)"
-  exit 1
-fi
+LIGHT_RED='\033[1;31m'
+RED='\033[0;31m'
+LIGHT_BLUE='\033[0;96m'
+BLUE='\033[1;34m'
+DARK_GRAY='\033[0;37m'
+LIGHT_GREEN='\033[1;32m'
+NoColor='\033[0m'
 
-# define version using information from GitHub
-get_latest_release() {
-  curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
-  grep '"tag_name":' |                                              # Get tag line
-  sed -E 's/.*"([^"]+)".*/\1/'                                      # Pluck JSON value
-}
+[[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
+[[ ! -x "$(command -v curl)" ]] && echo -e ""$RED"Error: Please install curl to run this script"$NoColor"" && exit 1
 
-echo "* Retrieving release information.."
-PTERODACTYL_VERSION="$(get_latest_release "pterodactyl/panel")"
-echo "* Latest version is $PTERODACTYL_VERSION"
-
-# variables
+PANEL_DL_URL="https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz"
+CONFIGS_URL="https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/master/configs"
+PTERODACTYL_VERSION="$(curl --silent "https://api.github.com/repos/pterodactyl/panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')"="$(get_latest_release "pterodactyl/panel")"
 WEBSERVER="nginx"
 FQDN=""
-
-# default MySQL credentials
 MYSQL_DB="pterodactyl"
 MYSQL_USER="pterodactyl"
 MYSQL_PASSWORD=""
-
-# environment
 email=""
-
-# Initial admin account
 user_email=""
 user_username=""
 user_firstname=""
 user_lastname=""
 user_password=""
-
-# assume SSL, will fetch different config if true
 ASSUME_SSL=false
 CONFIGURE_LETSENCRYPT=false
-
-# download URLs
-PANEL_DL_URL="https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz"
-CONFIGS_URL="https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/master/configs"
-
-# apt sources path
 SOURCES_PATH="/etc/apt/sources.list"
-
-# ufw firewall
 CONFIGURE_UFW=false
-
-# firewall_cmd
 CONFIGURE_FIREWALL_CMD=false
-
-# firewall status
 CONFIGURE_FIREWALL=false
+
 
 # visual functions
 function print_error {
@@ -117,11 +88,11 @@ function print_brake {
     echo ""
 }
 
-hyperlink() {
+function hyperlink() {
   echo -e "\e]8;;${1}\a${1}\e]8;;\a"
 }
 
-required_input() {
+function required_input() {
   local  __resultvar=$1
   local  result=''
 
@@ -135,7 +106,7 @@ required_input() {
   eval "$__resultvar="'$result'""
 }
 
-password_input() {
+function password_input() {
   local  __resultvar=$1
   local  result=''
 
@@ -167,7 +138,6 @@ password_input() {
   eval "$__resultvar="'$result'""
 }
 
-# other functions
 function detect_distro {
   if [ -f /etc/os-release ]; then
     # freedesktop.org and systemd
@@ -318,7 +288,6 @@ function configure {
   set_folder_permissions
 }
 
-# set the correct folder permissions depending on OS and webserver
 function set_folder_permissions {
   # if os is ubuntu or debian, we do this
   if [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
@@ -331,7 +300,6 @@ function set_folder_permissions {
   fi
 }
 
-# insert cronjob
 function insert_cronjob {
   echo "* Installing cronjob.. "
 
@@ -1046,6 +1014,5 @@ function goodbye {
   print_brake 62
 }
 
-# run script
 main
 goodbye
