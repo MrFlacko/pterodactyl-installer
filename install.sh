@@ -69,9 +69,9 @@ OpeningMessage() {
   while true
     do
       read -p 'Please type 1-3: ' OpeningOption
-      [[ "$OpeningOption" == "1" ]] && loading_bar && bash <(curl -s $Panel) && bash <(curl -s $Wings)
-      [[ "$OpeningOption" == "2" ]] && loading_bar && bash <(curl -s $Panel)
-      [[ "$OpeningOption" == "3" ]] && loading_bar && bash <(curl -s $Wings)
+      [[ "$OpeningOption" == "1" ]] && loading_bar && bash <(curl -s $Panel) && bash <(curl -s $Wings) && exit 0
+      [[ "$OpeningOption" == "2" ]] && loading_bar && bash <(curl -s $Panel) && exit 0
+      [[ "$OpeningOption" == "3" ]] && loading_bar && bash <(curl -s $Wings) && exit 0
     done
 }
 
