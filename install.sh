@@ -28,91 +28,99 @@ set -e
 #                                                                           #
 #############################################################################
 
-# exit with error status code if user is not root
-if [[ $EUID -ne 0 ]]; then
-  echo "* This script must be executed with root privileges (sudo)." 1>&2
-  exit 1
-fi
+# This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
+Script_Version=0.1
 
-# check for curl
-if ! [ -x "$(command -v curl)" ]; then
-  echo "* curl is required in order for this script to work."
-  echo "* install using apt (Debian and derivatives) or yum/dnf (CentOS)"
-  exit 1
-fi
+# Some colours that are used throughout the script
+LIGHT_RED='\033[1;31m'
+RED='\033[0;31m'
+LIGHT_BLUE='\033[0;96m'
+BLUE='\033[1;34m'
+DARK_GRAY='\033[0;37m'
+LIGHT_GREEN='\033[1;32m'
+NoColor='\033[0m'
 
-output() {
-  echo "* ${1}"
-}
+# Global Variables
+os_version="$(lsb_release -a 2> /dev/null | grep Desc | sed -e 's/.*://' -e 's/^[ \t]*//')"
+pterodactyl_version="$(curl --silent "https://api.github.com/repos/pterodactyl/panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')"
+MemTotal="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemTotal | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
+MemAvailable="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemAvailable | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
+Cores="$(lscpu | grep -E '^CPU\(s\):' | sed -e 's/.*[^0-9]\([0-9]\+\)[^0-9]*$/\1/')"
+PublicIP="$(wget http://ipecho.net/plain -O - -q ; echo)"
+pass=""
+FQDN=""
+DomainIP=""
 
-error() {
-  COLOR_RED='\033[0;31m'
-  COLOR_NC='\033[0m'
-
-  echo ""
-  echo -e "* ${COLOR_RED}ERROR${COLOR_NC}: $1"
-  echo ""
-}
-
-done=false
-
-output "Pterodactyl installation script"
-output
-output "Copyright (C) 2018 - 2020, Vilhelm Prytz, <vilhelm@prytznet.se>, et al."
-output "https://github.com/vilhelmprytz/pterodactyl-installer"
-output
-output "Sponsoring/Donations: https://github.com/vilhelmprytz/pterodactyl-installer?sponsor=1"
-output "This script is not associated with the official Pterodactyl Project."
-
-output
+# Check if the script can be ran
+[[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
+[[ ! -x "$(command -v curl)" ]] && echo -e ""$RED"This script needs curl. Please install it to continue."$NoColor"" && exit 1
+[[ -z $(echo $os_version | grep 'Ubuntu 20') ]] && echo -e ""$RED"Error: This script must be ran with Ubuntu 20.04"$NoColor"" && exit 1
 
 panel() {
-  bash <(curl -s https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/master/install-panel.sh)
+  bash <(curl -s https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-panel.sh)
 }
 
 wings() {
-  bash <(curl -s https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/master/install-wings.sh)
+  bash <(curl -s https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-wings.sh)
 }
 
-legacy_panel() {
-  bash <(curl -s https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/master/legacy/panel_0.7.sh)
+OpeningMessage() {
+  echo -e "\n${BLUE}Pterodactyl Installation Script ${DARK_GRAY}($Script_Version)"
+  echo -e "Forked from Vilhelmprytz\n"
+  echo -e "${LIGHT_GREEN}Hello,"
+  echo "This script was designed to quickly run through the Pterodactyl" 
+  echo "install with as much ease to the user as possible."
+  echo "This script is a bit of a redesign of the one from Vilhelmprytz."
+  echo "The last one did a few things that I found a bit annoying so I just"
+  echo "decided to make this one."
+  echo -e "Best of luck - Flacko \n"
+  echo ''
+  echo -e "\t${NoColor} What would you like to do?"
+  echo -e "${LIGHT_BLUE}[1] ${DARK_GRAY}Panel and Wings Installation"
+  echo -e "${LIGHT_BLUE}[2] ${DARK_GRAY}Just Panel Installation"
+  echo -e "${LIGHT_BLUE}[3] ${DARK_GRAY}Just Wings Installation"  
+  echo -e "${NoColor}"
+
+  while true
+    do
+      read -p 'Please type 1-3: ' OpeningOption
+      [[ OpeningOption == "1" ]] && panel
+      [[ OpeningOption == "2" ]] && wings
+      [[ OpeningOption == "3" ]] && panel && wings
+    done
+
 }
 
-legacy_wings() {
-  bash <(curl -s https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/master/legacy/daemon_0.6.sh)
+# This installs a few programs just to run the correct tests on the system. Mainly for the DomainTester function
+TestingDependencies() {
+  echo 'Just need to install a few things for testing...'
+  sleep 3
+  apt update
+  apt install -y dnsutils curl wget
+  clear
 }
 
-while [ "$done" == false ]; do
-  done=true
+# This is a visual loading bar funcation obtained from https://unix.stackexchange.com/questions/415421/linux-how-to-create-simple-progress-bar-in-bash
+function loading_bar {
+  prog() {
+      local w=80 p=$1;  shift
+      # create a string of spaces, then change them to dots
+      printf -v dots "%*s" "$(( $p*$w/100 ))" ""; dots=${dots// /.};
+      # print those dots on a fixed-width space plus the percentage etc. 
+      printf "\r\e[K|%-*s| %3d %% %s" "$w" "$dots" "$p" "$*"; 
+  }
+  # test loop
+  for x in {1..100} ; do
+      prog "$x" 
+      sleep .05   # do some work here
+  done ; echo
+}
 
-  output "What would you like to do?"
-  output "[1] Install the panel"
-  output "[2] Install the daemon (Wings)"
-  output "[3] Install both on the same machine, i.e. [1] and [2]"
-  output "[4] Install 0.7 version of panel (no longer maintained)"
-  output "[5] Install 0.6 version of daemon (works with panel 0.7, no longer maintained)"
-  output "[6] Install both [4] and [5] on the same machine (daemon script runs after panel)"
+main() {
+  clear
+  TestingDependencies
+  OpeningMessage
+  exit 0
+}
 
-  echo -n "* Input 1-6: "
-  read -r action
-
-  case $action in
-      1 )
-          panel ;;
-      2 )
-          wings ;;
-      3 )
-          panel
-          wings ;;
-      4 )
-          legacy_panel ;;
-      5 )
-          legacy_wings ;;
-      6 )
-          legacy_panel
-          legacy_wings ;;          
-      * )
-          error "Invalid option"
-          done=false ;;
-  esac
-done
+main
