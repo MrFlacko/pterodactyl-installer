@@ -29,7 +29,7 @@ set -e
 #############################################################################
 
 # This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
-Script_Version=0.4
+Script_Version="0.5"
 
 # Some colours that are used throughout the script
 LIGHT_RED='\033[1;31m'
