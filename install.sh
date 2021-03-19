@@ -29,7 +29,7 @@ set -e
 #############################################################################
 
 # This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
-Script_Version="0.7"
+Script_Version="0.8"
 
 # Some colours that are used throughout the script
 LIGHT_RED='\033[1;31m'
@@ -69,14 +69,15 @@ OpeningMessage() {
   while true
     do
       read -p 'Please type 1-3: ' OpeningOption
-      [[ "$OpeningOption" == "1" ]] && loading_bar && bash <(curl -s $Panel)
-      [[ "$OpeningOption" == "2" ]] && loading_bar && bash <(curl -s $Wings)
-      [[ "$OpeningOption" == "3" ]] && loading_bar && bash <(curl -s $Panel) && bash <(curl -s $Wings)
+      [[ "$OpeningOption" == "1" ]] && loading_bar && bash <(curl -s $Panel) && bash <(curl -s $Wings)
+      [[ "$OpeningOption" == "2" ]] && loading_bar && bash <(curl -s $Panel)
+      [[ "$OpeningOption" == "3" ]] && loading_bar && bash <(curl -s $Wings)
     done
 }
 
 # This is a visual loading bar funcation obtained from https://unix.stackexchange.com/questions/415421/linux-how-to-create-simple-progress-bar-in-bash
 function loading_bar {
+  clear
   prog() {
       local w=80 p=$1;  shift
       # create a string of spaces, then change them to dots
@@ -89,6 +90,7 @@ function loading_bar {
       prog "$x" 
       sleep .05   # do some work here
   done ; echo
+  clear
 }
 
 main() {
