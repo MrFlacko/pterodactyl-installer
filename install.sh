@@ -54,7 +54,7 @@ DomainIP=""
 # Check if the script can be ran
 [[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
 [[ ! -x "$(command -v curl)" ]] && echo -e ""$RED"This script needs curl. Please install it to continue."$NoColor"" && exit 1
-[[ -z $(echo $os_version | grep 'Ubuntu 20') ]] && echo -e ""$RED"Error: This script must be ran with Ubuntu 20.04"$NoColor"" && exit 1
+#[[ -z $(echo $os_version | grep 'Ubuntu 20') ]] && echo -e ""$RED"Error: This script must be ran with Ubuntu 20.04"$NoColor"" && exit 1
 
 panel() {
   bash <(curl -s https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-panel.sh)
