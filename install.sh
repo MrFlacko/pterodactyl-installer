@@ -93,7 +93,6 @@ function loading_bar {
 
 main() {
   clear
-  TestingDependencies
   OpeningMessage
   exit 0
 }
