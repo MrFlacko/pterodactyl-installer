@@ -29,7 +29,7 @@ set -e
 #############################################################################
 
 # This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
-Script_Version="0.6"
+Script_Version="0.7"
 
 # Some colours that are used throughout the script
 LIGHT_RED='\033[1;31m'
@@ -41,8 +41,8 @@ LIGHT_GREEN='\033[1;32m'
 NoColor='\033[0m'
 
 # Global Variables
-Panel="https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/panel.sh"
-Wings="https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/wings.sh"
+Panel="https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-panel.sh"
+Wings="https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-wings.sh"
 
 # Check if the script can be ran
 [[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
