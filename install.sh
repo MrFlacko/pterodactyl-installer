@@ -29,7 +29,7 @@ set -e
 #############################################################################
 
 # This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
-Script_Version=0.2
+Script_Version=0.3
 
 # Some colours that are used throughout the script
 LIGHT_RED='\033[1;31m'
@@ -47,6 +47,8 @@ MemTotal="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | gre
 MemAvailable="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemAvailable | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
 Cores="$(lscpu | grep -E '^CPU\(s\):' | sed -e 's/.*[^0-9]\([0-9]\+\)[^0-9]*$/\1/')"
 PublicIP="$(wget http://ipecho.net/plain -O - -q ; echo)"
+Panel="https://github.com/MrFlacko/pterodactyl-installer/blob/master/install-panel.sh"
+Wings="https://github.com/MrFlacko/pterodactyl-installer/blob/master/install-wings.sh"
 pass=""
 FQDN=""
 DomainIP=""
@@ -55,14 +57,6 @@ DomainIP=""
 [[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
 [[ ! -x "$(command -v curl)" ]] && echo -e ""$RED"This script needs curl. Please install it to continue."$NoColor"" && exit 1
 #[[ -z $(echo $os_version | grep 'Ubuntu 20') ]] && echo -e ""$RED"Error: This script must be ran with Ubuntu 20.04"$NoColor"" && exit 1
-
-panel() {
-  bash <(curl -s https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-panel.sh)
-}
-
-wings() {
-  bash <(curl -s https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/master/install-wings.sh)
-}
 
 OpeningMessage() {
   echo -e "\n${BLUE}Pterodactyl Installation Script ${DARK_GRAY}($Script_Version)"
@@ -84,9 +78,9 @@ OpeningMessage() {
   while true
     do
       read -p 'Please type 1-3: ' OpeningOption
-      [[ OpeningOption == "1" ]] && panel
-      [[ OpeningOption == "2" ]] && wings
-      [[ OpeningOption == "3" ]] && panel && wings
+      [[ OpeningOption == "1" ]] && bash <(curl -s $Panel)
+      [[ OpeningOption == "2" ]] && bash <(curl -s $Wings)
+      [[ OpeningOption == "3" ]] && bash <(curl -s $Panel) && bash <(curl -s $Wings)
     done
 
 }
