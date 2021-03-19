@@ -41,17 +41,8 @@ LIGHT_GREEN='\033[1;32m'
 NoColor='\033[0m'
 
 # Global Variables
-os_version="$(lsb_release -a 2> /dev/null | grep Desc | sed -e 's/.*://' -e 's/^[ \t]*//')"
-pterodactyl_version="$(curl --silent "https://api.github.com/repos/pterodactyl/panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')"
-MemTotal="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemTotal | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
-MemAvailable="$(awk '$3=="kB"{$2=$2/1024;$3="MB"} 1' /proc/meminfo | column -t | grep MemAvailable | sed -e 's/.*://' -e 's/^[ \t]*//' -e 's/\..*$//')"
-Cores="$(lscpu | grep -E '^CPU\(s\):' | sed -e 's/.*[^0-9]\([0-9]\+\)[^0-9]*$/\1/')"
-PublicIP="$(wget http://ipecho.net/plain -O - -q ; echo)"
 Panel="https://github.com/MrFlacko/pterodactyl-installer/blob/master/install-panel.sh"
 Wings="https://github.com/MrFlacko/pterodactyl-installer/blob/master/install-wings.sh"
-pass=""
-FQDN=""
-DomainIP=""
 
 # Check if the script can be ran
 [[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
@@ -78,20 +69,10 @@ OpeningMessage() {
   while true
     do
       read -p 'Please type 1-3: ' OpeningOption
-      [[ "$OpeningOption" == "1" ]] && bash <(curl -s $Panel)
-      [[ "$OpeningOption" == "2" ]] && bash <(curl -s $Wings)
-      [[ "$OpeningOption" == "3" ]] && bash <(curl -s $Panel) && bash <(curl -s $Wings)
+      [[ "$OpeningOption" == "1" ]] && loading_bar && bash <(curl -s $Panel)
+      [[ "$OpeningOption" == "2" ]] && loading_bar && bash <(curl -s $Wings)
+      [[ "$OpeningOption" == "3" ]] && loading_bar && bash <(curl -s $Panel) && bash <(curl -s $Wings)
     done
-
-}
-
-# This installs a few programs just to run the correct tests on the system. Mainly for the DomainTester function
-TestingDependencies() {
-  echo 'Just need to install a few things for testing...'
-  sleep 3
-  apt update
-  apt install -y dnsutils curl wget
-  clear
 }
 
 # This is a visual loading bar funcation obtained from https://unix.stackexchange.com/questions/415421/linux-how-to-create-simple-progress-bar-in-bash
