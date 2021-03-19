@@ -29,7 +29,7 @@ set -e
 #############################################################################
 
 # This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
-Script_Version=0.1
+Script_Version=0.2
 
 # Some colours that are used throughout the script
 LIGHT_RED='\033[1;31m'
@@ -75,7 +75,7 @@ OpeningMessage() {
   echo "decided to make this one."
   echo -e "Best of luck - Flacko \n"
   echo ''
-  echo -e "\t${NoColor} What would you like to do?"
+  echo -e "${NoColor} What would you like to do?"
   echo -e "${LIGHT_BLUE}[1] ${DARK_GRAY}Panel and Wings Installation"
   echo -e "${LIGHT_BLUE}[2] ${DARK_GRAY}Just Panel Installation"
   echo -e "${LIGHT_BLUE}[3] ${DARK_GRAY}Just Wings Installation"  
