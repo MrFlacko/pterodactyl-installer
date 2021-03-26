@@ -30,74 +30,45 @@ set -e
 
 ######## General checks #########
 
-# exit with error status code if user is not root
-if [[ $EUID -ne 0 ]]; then
-  echo "* This script must be executed with root privileges (sudo)." 1>&2
-  exit 1
-fi
+# This defines the version of the script. It allows me to easily keep track of it when I'm testing the script from GitHub
+Script_Version="0.1"
 
-# check for curl
-if ! [ -x "$(command -v curl)" ]; then
-  echo "* curl is required in order for this script to work."
-  echo "* install using apt (Debian and derivatives) or yum/dnf (CentOS)"
-  exit 1
-fi
+# Some colours that are used throughout the script
+LIGHT_RED='\033[1;31m'
+RED='\033[0;31m'
+LIGHT_BLUE='\033[0;96m'
+BLUE='\033[1;34m'
+DARK_GRAY='\033[0;37m'
+LIGHT_GREEN='\033[1;32m'
+NoColor='\033[0m'
 
-########## Variables ############
+# Check if the script can be ran
+[[ $EUID -ne 0 ]] && echo -e ""$RED"Error: Please run this script with root privileges (sudo)"$NoColor"" && exit 1
+[[ ! -x "$(command -v curl)" ]] && echo -e ""$RED"This script needs curl. Please install it to continue."$NoColor"" && exit 1
 
-# versioning
-GITHUB_SOURCE="master"
-SCRIPT_RELEASE="canary"
-
-FQDN=""
-
-# Default MySQL credentials
-MYSQL_DB="pterodactyl"
-MYSQL_USER="pterodactyl"
+# Global Varibals
 MYSQL_PASSWORD=""
-
-# Environment
+FQDN=""
 email=""
-
-# Initial admin account
 user_email=""
 user_username=""
 user_firstname=""
 user_lastname=""
 user_password=""
-
-# Assume SSL, will fetch different config if true
 ASSUME_SSL=false
-CONFIGURE_LETSENCRYPT=false
-
-# download URLs
-PANEL_DL_URL="https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz"
-GITHUB_BASE_URL="https://raw.githubusercontent.com/vilhelmprytz/pterodactyl-installer/$GITHUB_SOURCE"
-
-# ufw firewall
 CONFIGURE_UFW=false
-
-# firewall_cmd
-CONFIGURE_FIREWALL_CMD=false
-
-# firewall status
+MYSQL_DB="pterodactyl"
+GITHUB_SOURCE="master"
+SCRIPT_RELEASE="canary"
 CONFIGURE_FIREWALL=false
+MYSQL_USER="pterodactyl"
+CONFIGURE_LETSENCRYPT=false
+CONFIGURE_FIREWALL_CMD=false
+PANEL_DL_URL="https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/MrFlacko/pterodactyl-installer/$GITHUB_SOURCE"
+PTERODACTYL_VERSION="$(curl --silent "https://api.github.com/repos/pterodactyl/panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')"
 
-####### Version checking ########
-
-# define version using information from GitHub
-get_latest_release() {
-  curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
-  grep '"tag_name":' |                                              # Get tag line
-  sed -E 's/.*"([^"]+)".*/\1/'                                      # Pluck JSON value
-}
-
-# pterodactyl version
-echo "* Retrieving release information.."
-PTERODACTYL_VERSION="$(get_latest_release "pterodactyl/panel")"
-
-####### lib func #######
-
+# lib function
 array_contains_element () {
   local e match="$1"
   shift
@@ -106,13 +77,11 @@ array_contains_element () {
 }
 
 ####### Visual functions ########
-
 print_error() {
   COLOR_RED='\033[0;31m'
   COLOR_NC='\033[0m'
-
   echo ""
-  echo -e "* ${COLOR_RED}ERROR${COLOR_NC}: $1"
+  echo -e "${COLOR_RED}ERROR${COLOR_NC}: $1"
   echo ""
 }
 
@@ -120,8 +89,26 @@ print_warning() {
   COLOR_YELLOW='\033[1;33m'
   COLOR_NC='\033[0m'
   echo ""
-  echo -e "* ${COLOR_YELLOW}WARNING${COLOR_NC}: $1"
+  echo -e "${COLOR_YELLOW}WARNING${COLOR_NC}: $1"
   echo ""
+}
+
+# This is a visual loading bar funcation obtained from https://unix.stackexchange.com/questions/415421/linux-how-to-create-simple-progress-bar-in-bash
+function loading_bar {
+  clear
+  prog() {
+      local w=80 p=$1;  shift
+      # create a string of spaces, then change them to dots
+      printf -v dots "%*s" "$(( $p*$w/100 ))" ""; dots=${dots// /.};
+      # print those dots on a fixed-width space plus the percentage etc. 
+      printf "\r\e[K|%-*s| %3d %% %s" "$w" "$dots" "$p" "$*"; 
+  }
+  # test loop
+  for x in {1..100} ; do
+      prog "$x" 
+      sleep .05   # do some work here
+  done ; echo
+  clear
 }
 
 print_brake() {
@@ -143,7 +130,7 @@ required_input() {
   local  result=''
 
   while [ -z "$result" ]; do
-      echo -n "* ${2}"
+      echo -n "${2}"
       read -r result
 
       [ -z "$result" ] && print_error "${3}"
@@ -158,7 +145,7 @@ password_input() {
   local default="$4"
 
   while [ -z "$result" ]; do
-    echo -n "* ${2}"
+    echo -n "${2}"
 
     # modified from https://stackoverflow.com/a/22940001
     while IFS= read -r -s -n1 char; do
@@ -192,7 +179,7 @@ ask_letsencrypt() {
 
   print_warning "You cannot use Let's Encrypt with your hostname as an IP address! It must be a FQDN (e.g. panel.example.org)."
 
-  echo -e -n "* Do you want to automatically configure HTTPS using Let's Encrypt? (y/N): "
+  echo -e -n "Do you want to automatically configure HTTPS using Let's Encrypt? (y/N): "
   read -r CONFIRM_SSL
 
   if [[ "$CONFIRM_SSL" =~ [Yy] ]]; then
@@ -202,10 +189,10 @@ ask_letsencrypt() {
 }
 
 ask_assume_ssl() {
-  echo "* Let's Encrypt is not going to be automatically configured by this script (user opted out)."
-  echo "* You can 'assume' Let's Encrypt, which means the script will download a nginx configuration that is configured to use a Let's Encrypt certificate but the script won't obtain the certificate for you."
-  echo "* If you assume SSL and do not obtain the certificate, your installation will not work."
-  echo -n "* Assume SSL or not? (y/N): "
+  echo "Let's Encrypt is not going to be automatically configured by this script (user opted out)."
+  echo "You can 'assume' Let's Encrypt, which means the script will download a nginx configuration that is configured to use a Let's Encrypt certificate but the script won't obtain the certificate for you."
+  echo "If you assume SSL and do not obtain the certificate, your installation will not work."
+  echo -n "Assume SSL or not? (y/N): "
   read -r ASSUME_SSL_INPUT
 
   [[ "$ASSUME_SSL_INPUT" =~ [Yy] ]] && ASSUME_SSL=true
@@ -215,7 +202,7 @@ ask_assume_ssl() {
 ask_firewall() {
   case "$OS" in
     ubuntu | debian)
-      echo -e -n "* Do you want to automatically configure UFW (firewall)? (y/N): "
+      echo -e -n "Do you want to automatically configure UFW (firewall)? (y/N): "
       read -r CONFIRM_UFW
 
       if [[ "$CONFIRM_UFW" =~ [Yy] ]]; then
@@ -224,7 +211,7 @@ ask_firewall() {
       fi
       ;;
     centos)
-      echo -e -n "* Do you want to automatically configure firewall-cmd (firewall)? (y/N): "
+      echo -e -n "Do you want to automatically configure firewall-cmd (firewall)? (y/N): "
       read -r CONFIRM_FIREWALL_CMD
 
       if [[ "$CONFIRM_FIREWALL_CMD" =~ [Yy] ]]; then
@@ -297,9 +284,9 @@ check_os_comp() {
 
   # exit if not supported
   if [ "$SUPPORTED" == true ]; then
-    echo "* $OS $OS_VER is supported."
+    echo "$OS $OS_VER is supported."
   else
-    echo "* $OS $OS_VER is not supported"
+    echo "$OS $OS_VER is not supported"
     print_error "Unsupported OS"
     exit 1
   fi
@@ -309,14 +296,14 @@ check_os_comp() {
 
 # Install composer
 install_composer() {
-  echo "* Installing composer.."
+  echo "Installing composer.."
   curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-  echo "* Composer installed!"
+  echo "Composer installed!"
 }
 
 # Download pterodactyl files
 ptdl_dl() {
-  echo "* Downloading pterodactyl panel files .. "
+  echo "Downloading pterodactyl panel files .. "
   mkdir -p /var/www/pterodactyl
   cd /var/www/pterodactyl || exit
 
@@ -329,53 +316,53 @@ ptdl_dl() {
   COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 
   php artisan key:generate --force
-  echo "* Downloaded pterodactyl panel files & installed composer dependencies!"
+  echo "Downloaded pterodactyl panel files & installed composer dependencies!"
 }
 
 # Create a databse with user
 create_database() {
   if [ "$OS" == "centos" ]; then
     # secure MariaDB
-    echo "* MariaDB secure installation. The following are safe defaults."
-    echo "* Set root password? [Y/n] Y"
-    echo "* Remove anonymous users? [Y/n] Y"
-    echo "* Disallow root login remotely? [Y/n] Y"
-    echo "* Remove test database and access to it? [Y/n] Y"
-    echo "* Reload privilege tables now? [Y/n] Y"
+    echo "MariaDB secure installation. The following are safe defaults."
+    echo "Set root password? [Y/n] Y"
+    echo "Remove anonymous users? [Y/n] Y"
+    echo "Disallow root login remotely? [Y/n] Y"
+    echo "Remove test database and access to it? [Y/n] Y"
+    echo "Reload privilege tables now? [Y/n] Y"
     echo "*"
 
     mysql_secure_installation
 
-    echo "* The script should have asked you to set the MySQL root password earlier (not to be confused with the pterodactyl database user password)"
-    echo "* MySQL will now ask you to enter the password before each command."
+    echo "The script should have asked you to set the MySQL root password earlier (not to be confused with the pterodactyl database user password)"
+    echo "MySQL will now ask you to enter the password before each command."
 
-    echo "* Create MySQL user."
+    echo "Create MySQL user."
     mysql -u root -p -e "CREATE USER '${MYSQL_USER}'@'127.0.0.1' IDENTIFIED BY '${MYSQL_PASSWORD}';"
 
-    echo "* Create database."
+    echo "Create database."
     mysql -u root -p -e "CREATE DATABASE ${MYSQL_DB};"
 
-    echo "* Grant privileges."
+    echo "Grant privileges."
     mysql -u root -p -e "GRANT ALL PRIVILEGES ON ${MYSQL_DB}.* TO '${MYSQL_USER}'@'127.0.0.1' WITH GRANT OPTION;"
 
-    echo "* Flush privileges."
+    echo "Flush privileges."
     mysql -u root -p -e "FLUSH PRIVILEGES;"
   else
-    echo "* Performing MySQL queries.."
+    echo "Performing MySQL queries.."
 
-    echo "* Creating MySQL user.."
+    echo "Creating MySQL user.."
     mysql -u root -e "CREATE USER '${MYSQL_USER}'@'127.0.0.1' IDENTIFIED BY '${MYSQL_PASSWORD}';"
 
-    echo "* Creating database.."
+    echo "Creating database.."
     mysql -u root -e "CREATE DATABASE ${MYSQL_DB};"
 
-    echo "* Granting privileges.."
+    echo "Granting privileges.."
     mysql -u root -e "GRANT ALL PRIVILEGES ON ${MYSQL_DB}.* TO '${MYSQL_USER}'@'127.0.0.1' WITH GRANT OPTION;"
 
-    echo "* Flushing privileges.."
+    echo "Flushing privileges.."
     mysql -u root -e "FLUSH PRIVILEGES;"
 
-    echo "* MySQL database created & configured!"
+    echo "MySQL database created & configured!"
   fi
 }
 
@@ -432,15 +419,15 @@ set_folder_permissions() {
 
 # insert cronjob
 insert_cronjob() {
-  echo "* Installing cronjob.. "
+  echo "Installing cronjob.. "
 
-  crontab -l | { cat; echo "* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"; } | crontab -
+  crontab -l | { cat; echo "* * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"; } | crontab -
 
-  echo "* Cronjob installed!"
+  echo "Cronjob installed!"
 }
 
 install_pteroq() {
-  echo "* Installing pteroq service.."
+  echo "Installing pteroq service.."
 
   curl -o /etc/systemd/system/pteroq.service $GITHUB_BASE_URL/configs/pteroq.service
 
@@ -454,7 +441,7 @@ install_pteroq() {
   systemctl enable pteroq.service
   systemctl start pteroq
 
-  echo "* Installed pteroq!"
+  echo "Installed pteroq!"
 }
 
 ##### OS specific install functions #####
@@ -493,7 +480,7 @@ selinux_allow() {
 }
 
 ubuntu20_dep() {
-  echo "* Installing dependencies for Ubuntu 20.."
+  echo "Installing dependencies for Ubuntu 20.."
 
   # Add "add-apt-repository" command
   apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg
@@ -513,11 +500,11 @@ ubuntu20_dep() {
   # Enable services
   enable_services_debian_based
 
-  echo "* Dependencies for Ubuntu installed!"
+  echo "Dependencies for Ubuntu installed!"
 }
 
 ubuntu18_dep() {
-  echo "* Installing dependencies for Ubuntu 18.."
+  echo "Installing dependencies for Ubuntu 18.."
 
   # Add "add-apt-repository" command
   apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg
@@ -540,11 +527,11 @@ ubuntu18_dep() {
   # Enable services
   enable_services_debian_based
 
-  echo "* Dependencies for Ubuntu installed!"
+  echo "Dependencies for Ubuntu installed!"
 }
 
 debian_stretch_dep() {
-  echo "* Installing dependencies for Debian 8/9.."
+  echo "Installing dependencies for Debian 8/9.."
 
   # MariaDB need dirmngr
   apt -y install dirmngr
@@ -566,11 +553,11 @@ debian_stretch_dep() {
   # Enable services
   enable_services_debian_based
 
-  echo "* Dependencies for Debian 8/9 installed!"
+  echo "Dependencies for Debian 8/9 installed!"
 }
 
 debian_dep() {
-  echo "* Installing dependencies for Debian 10.."
+  echo "Installing dependencies for Debian 10.."
 
   # MariaDB need dirmngr
   apt -y install dirmngr
@@ -590,11 +577,11 @@ debian_dep() {
   # Enable services
   enable_services_debian_based
 
-  echo "* Dependencies for Debian 10 installed!"
+  echo "Dependencies for Debian 10 installed!"
 }
 
 centos7_dep() {
-  echo "* Installing dependencies for CentOS 7.."
+  echo "Installing dependencies for CentOS 7.."
 
   # SELinux tools
   yum install -y policycoreutils policycoreutils-python selinux-policy selinux-policy-targeted libselinux-utils setroubleshoot-server setools setools-console mcstrans
@@ -618,11 +605,11 @@ centos7_dep() {
   # SELinux (allow nginx and redis)
   selinux_allow
 
-  echo "* Dependencies for CentOS installed!"
+  echo "Dependencies for CentOS installed!"
 }
 
 centos8_dep() {
-  echo "* Installing dependencies for CentOS 8.."
+  echo "Installing dependencies for CentOS 8.."
 
   # SELinux tools
   dnf install -y policycoreutils selinux-policy selinux-policy-targeted setroubleshoot-server setools setools-console mcstrans
@@ -646,7 +633,7 @@ centos8_dep() {
   # SELinux (allow nginx and redis)
   selinux_allow
 
-  echo "* Dependencies for CentOS installed!"
+  echo "Dependencies for CentOS installed!"
 }
 
 ##### OTHER OS SPECIFIC FUNCTIONS #####
@@ -662,7 +649,7 @@ firewall_ufw() {
   apt install -y ufw
 
   echo -e "\n* Enabling Uncomplicated Firewall (UFW)"
-  echo "* Opening port 22 (SSH), 80 (HTTP) and 443 (HTTPS)"
+  echo "Opening port 22 (SSH), 80 (HTTP) and 443 (HTTPS)"
 
   # pointing to /dev/null silences the command output
   ufw allow ssh > /dev/null
@@ -676,7 +663,7 @@ firewall_ufw() {
 
 firewall_firewalld() {
   echo -e "\n* Enabling firewall_cmd (firewalld)"
-  echo "* Opening port 22 (SSH), 80 (HTTP) and 443 (HTTPS)"
+  echo "Opening port 22 (SSH), 80 (HTTP) and 443 (HTTPS)"
 
   # Install
   [ "$OS_VER_MAJOR" == "7" ] && yum -y -q install firewalld > /dev/null
@@ -691,7 +678,7 @@ firewall_firewalld() {
   firewall-cmd --add-service=ssh --permanent -q  # Port 22
   firewall-cmd --reload -q # Enable firewall
 
-  echo "* Firewall-cmd installed"
+  echo "Firewall-cmd installed"
   print_brake 70
 }
 
@@ -715,7 +702,7 @@ letsencrypt() {
   # Check if it succeded
   if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
     print_warning "The process of obtaining a Let's Encrypt certificate failed!"
-    echo -n "* Still assume SSL? (y/N): "
+    echo -n "Still assume SSL? (y/N): "
     read -r CONFIGURE_SSL
 
     if [[ "$CONFIGURE_SSL" =~ [Yy] ]]; then
@@ -732,7 +719,7 @@ letsencrypt() {
 ##### WEBSERVER CONFIGURATION FUNCTIONS #####
 
 configure_nginx() {
-  echo "* Configuring nginx .."
+  echo "Configuring nginx .."
 
   if [ $ASSUME_SSL == true ] && [ $CONFIGURE_LETSENCRYPT == false ]; then
     DL_FILE="nginx_ssl.conf"
@@ -776,13 +763,13 @@ configure_nginx() {
     systemctl restart nginx
   fi
 
-  echo "* nginx configured!"
+  echo "nginx configured!"
 }
 
 ##### MAIN FUNCTIONS #####
 
 perform_install() {
-  echo "* Starting installation.. this might take a while!"
+  echo "Starting installation.. this might take a while!"
 
   case "$OS" in
     debian | ubuntu)
@@ -827,7 +814,7 @@ main() {
   # check if we can detect an already existing installation
   if [ -d "/var/www/pterodactyl" ]; then
     print_warning "The script has detected that you already have Pterodactyl panel on your system! You cannot run the script multiple times, it will fail!"
-    echo -e -n "* Are you sure you want to proceed? (y/N): "
+    echo -e -n "Are you sure you want to proceed? (y/N): "
     read -r CONFIRM_PROCEED
     if [[ ! "$CONFIRM_PROCEED" =~ [Yy] ]]; then
       print_error "Installation aborted!"
@@ -839,15 +826,15 @@ main() {
   detect_distro
 
   print_brake 70
-  echo "* Pterodactyl panel installation script @ $SCRIPT_RELEASE"
+  echo "Pterodactyl panel installation script @ $SCRIPT_RELEASE"
   echo "*"
-  echo "* Copyright (C) 2018 - 2021, Vilhelm Prytz, <vilhelm@prytznet.se>"
-  echo "* https://github.com/vilhelmprytz/pterodactyl-installer"
+  echo "Copyright (C) 2018 - 2021, Vilhelm Prytz, <vilhelm@prytznet.se>"
+  echo "https://github.com/vilhelmprytz/pterodactyl-installer"
   echo "*"
-  echo "* This script is not associated with the official Pterodactyl Project."
+  echo "This script is not associated with the official Pterodactyl Project."
   echo "*"
-  echo "* Running $OS version $OS_VER."
-  echo "* Latest pterodactyl/panel is $PTERODACTYL_VERSION"
+  echo "Running $OS version $OS_VER."
+  echo "Latest pterodactyl/panel is $PTERODACTYL_VERSION"
   print_brake 70
 
   # checks if the system is compatible with this installation script
@@ -855,19 +842,19 @@ main() {
 
   # set database credentials
   print_brake 72
-  echo "* Database configuration."
+  echo "Database configuration."
   echo ""
-  echo "* This will be the credentials used for communication between the MySQL"
-  echo "* database and the panel. You do not need to create the database"
-  echo "* before running this script, the script will do that for you."
+  echo "This will be the credentials used for communication between the MySQL"
+  echo "database and the panel. You do not need to create the database"
+  echo "before running this script, the script will do that for you."
   echo ""
 
-  echo -n "* Database name (panel): "
+  echo -n "Database name (panel): "
   read -r MYSQL_DB_INPUT
 
   [ -z "$MYSQL_DB_INPUT" ] && MYSQL_DB="panel" || MYSQL_DB=$MYSQL_DB_INPUT
 
-  echo -n "* Username (pterodactyl): "
+  echo -n "Username (pterodactyl): "
   read -r MYSQL_USER_INPUT
 
   [ -z "$MYSQL_USER_INPUT" ] && MYSQL_USER="pterodactyl" || MYSQL_USER=$MYSQL_USER_INPUT
@@ -877,10 +864,10 @@ main() {
   password_input MYSQL_PASSWORD "Password (press enter to use randomly generated password): " "MySQL password cannot be empty" "$rand_pw"
 
   readarray -t valid_timezones <<< "$(curl -s $GITHUB_BASE_URL/configs/valid_timezones.txt)"
-  echo "* List of valid timezones here $(hyperlink "https://www.php.net/manual/en/timezones.php")"
+  echo "List of valid timezones here $(hyperlink "https://www.php.net/manual/en/timezones.php")"
 
   while [ -z "$timezone" ]; do
-    echo -n "* Select timezone [Europe/Stockholm]: "
+    echo -n "Select timezone [Europe/Stockholm]: "
     read -r timezone_input
   
     array_contains_element "$timezone_input" "${valid_timezones[@]}" && timezone="$timezone_input"
@@ -900,7 +887,7 @@ main() {
 
   # set FQDN
   while [ -z "$FQDN" ]; do
-      echo -n "* Set the FQDN of this panel (panel.example.com): "
+      echo -n "Set the FQDN of this panel (panel.example.com): "
       read -r FQDN
       [ -z "$FQDN" ] && print_error "FQDN cannot be empty"
   done
@@ -934,37 +921,37 @@ main() {
 
 summary() {
   print_brake 62
-  echo "* Pterodactyl panel $PTERODACTYL_VERSION with nginx on $OS"
-  echo "* Database name: $MYSQL_DB"
-  echo "* Database user: $MYSQL_USER"
-  echo "* Database password: (censored)"
-  echo "* Timezone: $timezone"
-  echo "* Email: $email"
-  echo "* User email: $user_email"
-  echo "* Username: $user_username"
-  echo "* First name: $user_firstname"
-  echo "* Last name: $user_lastname"
-  echo "* User password: (censored)"
-  echo "* Hostname/FQDN: $FQDN"
-  echo "* Configure Firewall? $CONFIGURE_FIREWALL"
-  echo "* Configure Let's Encrypt? $CONFIGURE_LETSENCRYPT"
-  echo "* Assume SSL? $ASSUME_SSL"
+  echo "Pterodactyl panel $PTERODACTYL_VERSION with nginx on $OS"
+  echo "Database name: $MYSQL_DB"
+  echo "Database user: $MYSQL_USER"
+  echo "Database password: (censored)"
+  echo "Timezone: $timezone"
+  echo "Email: $email"
+  echo "User email: $user_email"
+  echo "Username: $user_username"
+  echo "First name: $user_firstname"
+  echo "Last name: $user_lastname"
+  echo "User password: (censored)"
+  echo "Hostname/FQDN: $FQDN"
+  echo "Configure Firewall? $CONFIGURE_FIREWALL"
+  echo "Configure Let's Encrypt? $CONFIGURE_LETSENCRYPT"
+  echo "Assume SSL? $ASSUME_SSL"
   print_brake 62
 }
 
 goodbye() {
   print_brake 62
-  echo "* Panel installation completed"
+  echo "Panel installation completed"
   echo "*"
 
-  [ "$CONFIGURE_LETSENCRYPT" == true ] && echo "* Your panel should be accessible from $(hyperlink "$app_url")"
-  [ "$ASSUME_SSL" == true ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && echo "* You have opted in to use SSL, but not via Let's Encrypt automatically. Your panel will not work until SSL has been configured."
-  [ "$ASSUME_SSL" == false ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && echo "* Your panel should be accessible from $(hyperlink "$app_url")"
+  [ "$CONFIGURE_LETSENCRYPT" == true ] && echo "Your panel should be accessible from $(hyperlink "$app_url")"
+  [ "$ASSUME_SSL" == true ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && echo "You have opted in to use SSL, but not via Let's Encrypt automatically. Your panel will not work until SSL has been configured."
+  [ "$ASSUME_SSL" == false ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && echo "Your panel should be accessible from $(hyperlink "$app_url")"
 
   echo "*"
-  echo "* Installation is using nginx on $OS"
-  echo "* Thank you for using this script."
-  [ "$CONFIGURE_FIREWALL" == false ] && echo -e "* ${COLOR_RED}Note${COLOR_NC}: If you haven't configured the firewall: 80/443 (HTTP/HTTPS) is required to be open!"
+  echo "Installation is using nginx on $OS"
+  echo "Thank you for using this script."
+  [ "$CONFIGURE_FIREWALL" == false ] && echo -e "${COLOR_RED}Note${COLOR_NC}: If you haven't configured the firewall: 80/443 (HTTP/HTTPS) is required to be open!"
   print_brake 62
 }
 
